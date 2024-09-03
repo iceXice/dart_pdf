@@ -133,11 +133,11 @@ public class PrintJob: NSView, NSSharingServicePickerDelegate {
         return printers
     }
 
-    public func printPdf(name: String, withPageSize size: CGSize, andMargin _: CGRect, withPrinter printer: String?, dynamically dyn: Bool, andWindow window: NSWindow) {
+    public func printPdf(name: String, withPageSize size: CGSize, andMargin _: CGRect, withPrinter printer: String?, dynamically dyn: Bool, andWindow window: NSWindow , showSystemPrintUI showUI:Bool) {
         dynamic = dyn
         _window = window
         let sharedInfo = NSPrintInfo.shared
-        let sharedDict: [NSPrintInfo.AttributeKey: Any] = [NSPrintInfo.AttributeKey.copies: 2]
+        let sharedDict: [NSPrintInfo.AttributeKey: Any] = [NSPrintInfo.AttributeKey.copies: 1]
         let printInfoDict = NSMutableDictionary(dictionary: sharedDict)
         let printInfo = NSPrintInfo(dictionary: printInfoDict as! [NSPrintInfo.AttributeKey: Any])
 
@@ -159,27 +159,34 @@ public class PrintJob: NSView, NSSharingServicePickerDelegate {
         // The custom print view
         printOperation = NSPrintOperation(view: self, printInfo: printInfo)
         printOperation!.jobTitle = name
-        printOperation!.printPanel.options = [.showsPreview, .showsCopies]
-        if printer != nil {
+        if showUI {
+            printOperation!.printPanel.options = [.showsPreview, .showsCopies]
+            if printer != nil {
+                printOperation!.showsPrintPanel = false
+                printOperation!.showsProgressPanel = false
+            }
+
+            if dynamic {
+                printOperation!.printPanel.options = [.showsPreview, .showsPaperSize, .showsOrientation, .showsCopies]
+                printOperation!.runModal(for: _window!, delegate: self, didRun: #selector(printOperationDidRun(printOperation:success:contextInfo:)), contextInfo: nil)
+                return
+            }
+
+            printing.onLayout(
+                printJob: self,
+                width: printOperation!.printInfo.paperSize.width,
+                height: printOperation!.printInfo.paperSize.height,
+                marginLeft: printOperation!.printInfo.leftMargin,
+                marginTop: printOperation!.printInfo.topMargin,
+                marginRight: printOperation!.printInfo.rightMargin,
+                marginBottom: printOperation!.printInfo.bottomMargin
+            )
+        } else {
             printOperation!.showsPrintPanel = false
             printOperation!.showsProgressPanel = false
+            printOperation!.run()
         }
 
-        if dynamic {
-            printOperation!.printPanel.options = [.showsPreview, .showsPaperSize, .showsOrientation, .showsCopies]
-            printOperation!.runModal(for: _window!, delegate: self, didRun: #selector(printOperationDidRun(printOperation:success:contextInfo:)), contextInfo: nil)
-            return
-        }
-
-        printing.onLayout(
-            printJob: self,
-            width: printOperation!.printInfo.paperSize.width,
-            height: printOperation!.printInfo.paperSize.height,
-            marginLeft: printOperation!.printInfo.leftMargin,
-            marginTop: printOperation!.printInfo.topMargin,
-            marginRight: printOperation!.printInfo.rightMargin,
-            marginBottom: printOperation!.printInfo.bottomMargin
-        )
     }
 
     func cancelJob(_ error: String?) {
