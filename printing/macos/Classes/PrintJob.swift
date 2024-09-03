@@ -137,7 +137,7 @@ public class PrintJob: NSView, NSSharingServicePickerDelegate {
         dynamic = dyn
         _window = window
         let sharedInfo = NSPrintInfo.shared
-        let sharedDict = sharedInfo.dictionary()
+        let sharedDict: [NSPrintInfo.AttributeKey: Any] = [NSPrintInfo.AttributeKey.copies: 2]
         let printInfoDict = NSMutableDictionary(dictionary: sharedDict)
         let printInfo = NSPrintInfo(dictionary: printInfoDict as! [NSPrintInfo.AttributeKey: Any])
 
