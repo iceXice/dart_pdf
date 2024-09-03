@@ -70,6 +70,7 @@ abstract class PrintingPlatform extends PlatformInterface {
     OutputType outputType,
     bool forceCustomPrintPaper,
     bool showSystemPrintUI,
+    int printCopies,
   );
 
   /// Enumerate the available printers on the system.

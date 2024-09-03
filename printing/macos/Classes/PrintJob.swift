@@ -133,12 +133,12 @@ public class PrintJob: NSView, NSSharingServicePickerDelegate {
         return printers
     }
 
-    public func printPdf(name: String, withPageSize size: CGSize, andMargin _: CGRect, withPrinter printer: String?, dynamically dyn: Bool, andWindow window: NSWindow , showSystemPrintUI showUI:Bool) {
+    public func printPdf(name: String, withPageSize size: CGSize, andMargin _: CGRect, withPrinter printer: String?, dynamically dyn: Bool, andWindow window: NSWindow , showSystemPrintUI showUI:Bool , printCopies printCopie:Int) {
         dynamic = dyn
         _window = window
         let sharedInfo = NSPrintInfo.shared
         let sharedDict = sharedInfo.dictionary()
-//        let sharedDict: [NSPrintInfo.AttributeKey: Any] = [NSPrintInfo.AttributeKey.copies: 1] // 设置打印份数，暂时不用
+        sharedDict[NSPrintInfo.AttributeKey.copies] = printCopie //  设置打印份数，显示系统打印模版的时候设置不上要，修改设置方式
         let printInfoDict = NSMutableDictionary(dictionary: sharedDict)
         let printInfo = NSPrintInfo(dictionary: printInfoDict as! [NSPrintInfo.AttributeKey: Any])
 

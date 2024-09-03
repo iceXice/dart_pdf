@@ -160,6 +160,7 @@ class PrintingPlugin extends PrintingPlatform {
     OutputType outputType,
     bool forceCustomPrintPaper,
     bool showSystemPrintUI,
+    int printCopies,
   ) async {
     late Uint8List result;
     try {

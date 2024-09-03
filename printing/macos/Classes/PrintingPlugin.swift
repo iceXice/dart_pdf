@@ -63,7 +63,7 @@ public class PrintingPlugin: NSObject, FlutterPlugin {
             let printJob = PrintJob(printing: self, index: args["job"] as! Int)
             let dynamic = args["dynamic"] as! Bool
             let showUI = args["showSystemPrintUI"] as! Bool
-            
+            let printCopies = (args["printCopies"] as! NSNumber).intValue
             jobs[args["job"] as! UInt32] = printJob
 
             guard let window = registrar.view?.window else {
@@ -83,7 +83,7 @@ public class PrintingPlugin: NSObject, FlutterPlugin {
                                   width: width - marginRight - marginLeft,
                                   height: height - marginBottom - marginTop
                               ), withPrinter: printer,
-                              dynamically: dynamic, andWindow: window , showSystemPrintUI: showUI)
+                              dynamically: dynamic, andWindow: window , showSystemPrintUI: showUI , printCopies: printCopies)
             result(NSNumber(value: 1))
         } else if call.method == "listPrinters" {
             let printJob = PrintJob(printing: self, index: -1)

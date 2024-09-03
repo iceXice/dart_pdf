@@ -184,6 +184,7 @@ class MethodChannelPrinting extends PrintingPlatform {
     OutputType outputType,
     bool forceCustomPrintPaper,
     bool showSystemPrintUI,
+    int printCopies,
   ) async {
     final job = _printJobs.add(
       onCompleted: Completer<bool>(),
@@ -205,6 +206,7 @@ class MethodChannelPrinting extends PrintingPlatform {
       'outputType': outputType.index,
       'forceCustomPrintPaper': forceCustomPrintPaper,
       'showSystemPrintUI': showSystemPrintUI,
+      'printCopies': printCopies,
     };
 
     await _channel.invokeMethod<int>('printPdf', params);
@@ -218,8 +220,7 @@ class MethodChannelPrinting extends PrintingPlatform {
   @override
   Future<List<Printer>> listPrinters() async {
     final params = <String, dynamic>{};
-    final list =
-        await _channel.invokeMethod<List<dynamic>>('listPrinters', params);
+    final list = await _channel.invokeMethod<List<dynamic>>('listPrinters', params);
 
     final printers = <Printer>[];
 

@@ -58,6 +58,7 @@ mixin Printing {
     OutputType outputType = OutputType.generic,
     bool forceCustomPrintPaper = false,
     bool showSystemPrintUI = false,
+    int printCopies = 1,
   }) {
     return PrintingPlatform.instance.layoutPdf(
       null,
@@ -69,6 +70,7 @@ mixin Printing {
       outputType,
       forceCustomPrintPaper,
       showSystemPrintUI,
+      printCopies,
     );
   }
 
@@ -167,6 +169,7 @@ mixin Printing {
     OutputType outputType = OutputType.generic,
     bool forceCustomPrintPaper = false,
     bool showSystemPrintUI = false,
+    int printCopies = 1,
   }) {
     return PrintingPlatform.instance.layoutPdf(
       printer,
@@ -178,6 +181,7 @@ mixin Printing {
       outputType,
       forceCustomPrintPaper,
       showSystemPrintUI,
+      printCopies,
     );
   }
 
