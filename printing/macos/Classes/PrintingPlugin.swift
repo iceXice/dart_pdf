@@ -62,7 +62,7 @@ public class PrintingPlugin: NSObject, FlutterPlugin {
             let marginBottom = CGFloat((args["marginBottom"] as! NSNumber).floatValue)
             let printJob = PrintJob(printing: self, index: args["job"] as! Int)
             let dynamic = args["dynamic"] as! Bool
-            var showUI = args["showSystemPrintUI"] as! Bool
+            let showUI = args["showSystemPrintUI"] as! Bool
             
             jobs[args["job"] as! UInt32] = printJob
 
