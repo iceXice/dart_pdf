@@ -26,72 +26,77 @@
 #include <sstream>
 #include <vector>
 
-namespace nfet {
+namespace nfet
+{
 
-class Printing;
+  class Printing;
 
-struct Printer {
-  const std::string name;
-  const std::string url;
-  const std::string model;
-  const std::string location;
-  const std::string comment;
-  const bool default;
-  const bool available;
+  struct Printer
+  {
+    const std::string name;
+    const std::string url;
+    const std::string model;
+    const std::string location;
+    const std::string comment;
+    const bool default;
+    const bool available;
 
-  Printer(const std::string& name,
-          const std::string& url,
-          const std::string& model,
-          const std::string& location,
-          const std::string& comment,
-          bool default,
-          bool available)
-      : name(name),
-        url(url),
-        model(model),
-        location(location),
-        comment(comment),
-        default(default),
-        available(available) {}
-};
+    Printer(const std::string &name,
+            const std::string &url,
+            const std::string &model,
+            const std::string &location,
+            const std::string &comment,
+            bool default,
+            bool available)
+        : name(name),
+          url(url),
+          model(model),
+          location(location),
+          comment(comment),
+          default(default),
+          available(available) {}
+  };
 
-class PrintJob {
- private:
-  Printing* printing;
-  int index;
-  HGLOBAL hDevMode = nullptr;
-  HGLOBAL hDevNames = nullptr;
-  HDC hDC = nullptr;
-  std::string documentName;
+  class PrintJob
+  {
+  private:
+    Printing *printing;
+    int index;
+    HGLOBAL hDevMode = nullptr;
+    HGLOBAL hDevNames = nullptr;
+    HDC hDC = nullptr;
+    std::string documentName;
 
- public:
-  PrintJob(Printing* printing, int index);
+  public:
+    PrintJob(Printing *printing, int index);
 
-  int id() { return index; }
+    int id() { return index; }
 
-  std::vector<Printer> listPrinters();
+    std::vector<Printer> listPrinters();
 
-  bool printPdf(const std::string& name,
-                std::string printer,
-                double width,
-                double height,
-                bool usePrinterSettings);
+    bool printPdf(const std::string &name,
+                  std::string printer,
+                  double width,
+                  double height,
+                  bool usePrinterSettings,
+                  bool showSystemPrintUI,
+                  int copies);
 
-  void writeJob(std::vector<uint8_t> data);
+    void writeJob(std::vector<uint8_t> data);
 
-  void cancelJob(const std::string& error);
+    void cancelJob(const std::string &error);
 
-  bool sharePdf(std::vector<uint8_t> data, const std::string& name);
+    bool sharePdf(std::vector<uint8_t> data, const std::string &name);
 
-  void pickPrinter(void* result);
+    void pickPrinter(void *result);
 
-  void rasterPdf(std::vector<uint8_t> data,
-                 std::vector<int> pages,
-                 double scale);
+    void rasterPdf(std::vector<uint8_t> data,
+                   std::vector<int> pages,
+                   double scale);
 
-  std::map<std::string, bool> printingInfo();
-};
+    std::map<std::string, bool> printingInfo();
+  };
 
-}  // namespace nfet
+} // namespace nfet
 
-#endif  // PRINTING_PLUGIN_PRINT_JOB_H_
+#endif // PRINTING_PLUGIN_PRINT_JOB_H_
