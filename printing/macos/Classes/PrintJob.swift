@@ -160,33 +160,35 @@ public class PrintJob: NSView, NSSharingServicePickerDelegate {
         // The custom print view
         printOperation = NSPrintOperation(view: self, printInfo: printInfo)
         printOperation!.jobTitle = name
-        if showUI {
-            printOperation!.printPanel.options = [.showsPreview, .showsCopies]
-            if printer != nil {
-                printOperation!.showsPrintPanel = false
-                printOperation!.showsProgressPanel = false
-            }
-
-            if dynamic {
-                printOperation!.printPanel.options = [.showsPreview, .showsPaperSize, .showsOrientation, .showsCopies]
-                printOperation!.runModal(for: _window!, delegate: self, didRun: #selector(printOperationDidRun(printOperation:success:contextInfo:)), contextInfo: nil)
-                return
-            }
-
-            printing.onLayout(
-                printJob: self,
-                width: printOperation!.printInfo.paperSize.width,
-                height: printOperation!.printInfo.paperSize.height,
-                marginLeft: printOperation!.printInfo.leftMargin,
-                marginTop: printOperation!.printInfo.topMargin,
-                marginRight: printOperation!.printInfo.rightMargin,
-                marginBottom: printOperation!.printInfo.bottomMargin
-            )
-        } else {
+        printOperation!.printPanel.options = [.showsPreview, .showsCopies]
+        if printer != nil {
             printOperation!.showsPrintPanel = false
             printOperation!.showsProgressPanel = false
-            printOperation!.run()
         }
+
+        if dynamic {
+            printOperation!.printPanel.options = [.showsPreview, .showsPaperSize, .showsOrientation, .showsCopies]
+            printOperation!.runModal(for: _window!, delegate: self, didRun: #selector(printOperationDidRun(printOperation:success:contextInfo:)), contextInfo: nil)
+            return
+        }
+
+        printing.onLayout(
+            printJob: self,
+            width: printOperation!.printInfo.paperSize.width,
+            height: printOperation!.printInfo.paperSize.height,
+            marginLeft: printOperation!.printInfo.leftMargin,
+            marginTop: printOperation!.printInfo.topMargin,
+            marginRight: printOperation!.printInfo.rightMargin,
+            marginBottom: printOperation!.printInfo.bottomMargin
+        )
+//        if showUI {
+//        } else {
+//            printOperation!.showsPrintPanel = false
+//            printOperation!.showsProgressPanel = false
+//            printOperation!.run()
+//        }
+
+     
 
     }
 
