@@ -113,14 +113,16 @@ namespace nfet
             dm->dmFields =
                 DM_ORIENTATION | DM_PAPERSIZE | DM_PAPERLENGTH | DM_PAPERWIDTH | DM_COPIES;
             dm->dmPaperSize = 0;
-            if (width > height)
-            {
-                dm->dmOrientation = DMORIENT_PORTRAIT;
-            }
-            else
-            {
-                dm->dmOrientation = DMORIENT_LANDSCAPE;
-            }
+            // if (width > height)
+            // {
+            //     dm->dmOrientation = DMORIENT_PORTRAIT;
+            // }
+            // else
+            // {
+            //     dm->dmOrientation = DMORIENT_LANDSCAPE;
+            // }
+            /// 这里永远都是正的方向出纸
+            dm->dmOrientation = DMORIENT_PORTRAIT;
             dm->dmPaperWidth = static_cast<short>(round(width * 254 / pdfDpi));
             dm->dmPaperLength = static_cast<short>(round(height * 254 / pdfDpi));
             dm->dmCopies = static_cast<short>(copies);
@@ -128,6 +130,7 @@ namespace nfet
             std::cout << "dmPaperWidth: " << dm->dmPaperWidth << std::endl;
             std::cout << "dmPaperLength: " << dm->dmPaperLength << std::endl;
             std::cout << "dmCopies: " << dm->dmCopies << std::endl;
+            std::cout << "dmOrientation 1log: " << dm->dmOrientation << std::endl;
         }
 
         if (printer.empty())
