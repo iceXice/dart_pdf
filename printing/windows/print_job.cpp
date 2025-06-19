@@ -100,6 +100,53 @@ namespace nfet
         }
 
         auto dm = static_cast<DEVMODE *>(GlobalAlloc(0, dmSize + dmExtra));
+        // 获取当前打印机的驱动配置然后赋值到dm
+        HANDLE hPrinter = NULL;
+        if (!printer.empty())
+        {
+            if (!OpenPrinterW(const_cast<LPWSTR>(fromUtf8(printer).c_str()), &hPrinter, NULL))
+            {
+                std::cout << "Failed to open printer: " << GetLastError() << std::endl;
+                GlobalFree(dm);
+                return false;
+            }
+        }
+
+        // Retrieve printer's DEVMODE
+        LONG dmSizeNeeded = DocumentProperties(NULL, hPrinter, const_cast<LPWSTR>(fromUtf8(printer).c_str()), NULL, NULL, 0);
+        if (dmSizeNeeded <= 0)
+        {
+            std::cout << "Failed to get DEVMODE size: " << GetLastError() << std::endl;
+            ClosePrinter(hPrinter);
+            GlobalFree(dm);
+            return false;
+        }
+
+        // Allocate memory for DEVMODE
+        DEVMODE *printerDm = static_cast<DEVMODE *>(GlobalAlloc(GPTR, dmSizeNeeded));
+        if (!printerDm)
+        {
+            std::cout << "Failed to allocate memory for DEVMODE" << std::endl;
+            ClosePrinter(hPrinter);
+            GlobalFree(dm);
+            return false;
+        }
+
+        // Get the printer's DEVMODE
+        LONG result = DocumentProperties(NULL, hPrinter, const_cast<LPWSTR>(fromUtf8(printer).c_str()), printerDm, NULL, DM_OUT_BUFFER);
+        if (result != IDOK)
+        {
+            std::cout << "Failed to retrieve DEVMODE: " << GetLastError() << std::endl;
+            GlobalFree(printerDm);
+            ClosePrinter(hPrinter);
+            GlobalFree(dm);
+            return false;
+        }
+
+        memcpy(dm, printerDm, dmSize + dmExtra);
+
+        GlobalFree(printerDm);
+        ClosePrinter(hPrinter);
 
         if (usePrinterSettings)
         {
