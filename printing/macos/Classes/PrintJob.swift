@@ -181,14 +181,6 @@ public class PrintJob: NSView, NSSharingServicePickerDelegate {
             marginRight: printOperation!.printInfo.rightMargin,
             marginBottom: printOperation!.printInfo.bottomMargin
         )
-//        if showUI {
-//        } else {
-//            printOperation!.showsPrintPanel = false
-//            printOperation!.showsProgressPanel = false
-//            printOperation!.run()
-//        }
-
-     
 
     }
 
