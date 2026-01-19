@@ -103,60 +103,29 @@ namespace nfet
 
         if (usePrinterSettings)
         {
-            dm = nullptr; // to use default driver config  使用打印机的设置
-            std::cout << "走 usePrinterSettings  " << std::endl;
+            std::cout << "走 usePrinterSettings 2 " << std::endl;
 
-            // if (!showSystemPrintUI)
-            // {
-            //     /// 不显示系统打印的时候， 获取当前打印机的驱动配置然后赋值到dm
-            //     HANDLE hPrinter = NULL;
-            //     if (!printer.empty())
-            //     {
-            //         if (!OpenPrinterW(const_cast<LPWSTR>(fromUtf8(printer).c_str()), &hPrinter, NULL))
-            //         {
-            //             std::cout << "Failed to open printer: " << GetLastError() << std::endl;
-            //             GlobalFree(dm);
-            //             return false;
-            //         }
-            //     }
+            HANDLE hPrinter = nullptr;
+            auto printerName = fromUtf8(printer);
+            if (OpenPrinter(const_cast<LPTSTR>(printerName.c_str()), &hPrinter, nullptr))
+            {
+                // 获取默认的 DEVMODE
+                DocumentProperties(nullptr, hPrinter, const_cast<LPTSTR>(printerName.c_str()), dm, nullptr, DM_OUT_BUFFER);
 
-            //     // Retrieve printer's DEVMODE
-            //     LONG dmSizeNeeded = DocumentProperties(NULL, hPrinter, const_cast<LPWSTR>(fromUtf8(printer).c_str()), NULL, NULL, 0);
-            //     if (dmSizeNeeded <= 0)
-            //     {
-            //         std::cout << "Failed to get DEVMODE size: " << GetLastError() << std::endl;
-            //         ClosePrinter(hPrinter);
-            //         GlobalFree(dm);
-            //         return false;
-            //     }
+                // 修改宽高和份数
+                dm->dmFields |= DM_PAPERWIDTH | DM_PAPERLENGTH | DM_PAPERSIZE | DM_COPIES;
+                dm->dmPaperSize = 0; // 自定义尺寸
+                dm->dmPaperWidth = static_cast<short>(round(width * 254 / pdfDpi));
+                dm->dmPaperLength = static_cast<short>(round(height * 254 / pdfDpi));
+                dm->dmCopies = static_cast<short>(copies);
 
-            //     // Allocate memory for DEVMODE
-            //     DEVMODE *printerDm = static_cast<DEVMODE *>(GlobalAlloc(GPTR, dmSizeNeeded));
-            //     if (!printerDm)
-            //     {
-            //         std::cout << "Failed to allocate memory for DEVMODE" << std::endl;
-            //         ClosePrinter(hPrinter);
-            //         GlobalFree(dm);
-            //         return false;
-            //     }
+                std::cout << "已在默认设置基础上修改: " << std::endl;
+                std::cout << "dmPaperWidth: " << dm->dmPaperWidth << std::endl;
+                std::cout << "dmPaperLength: " << dm->dmPaperLength << std::endl;
+                std::cout << "dmCopies: " << dm->dmCopies << std::endl;
 
-            //     // Get the printer's DEVMODE
-            //     LONG result = DocumentProperties(NULL, hPrinter, const_cast<LPWSTR>(fromUtf8(printer).c_str()), printerDm, NULL, DM_OUT_BUFFER);
-            //     if (result != IDOK)
-            //     {
-            //         std::cout << "Failed to retrieve DEVMODE: " << GetLastError() << std::endl;
-            //         GlobalFree(printerDm);
-            //         ClosePrinter(hPrinter);
-            //         GlobalFree(dm);
-            //         return false;
-            //     }
-
-            //     memcpy(dm, printerDm, dmSize + dmExtra);
-
-            //     GlobalFree(printerDm);
-            //     ClosePrinter(hPrinter);
-            //     std::cout << "获取当前打印机的驱动配置然后赋值到dm 完毕  " << std::endl;
-            // }
+                ClosePrinter(hPrinter);
+            }
         }
         else
         {
