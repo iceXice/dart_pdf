@@ -99,37 +99,62 @@ namespace nfet
                                          NULL, NULL);
         }
 
-        auto dm = static_cast<DEVMODE *>(GlobalAlloc(0, dmSize + dmExtra));
+        // 使用 GPTR 自动初始化内存为零
+        auto dm = static_cast<DEVMODE *>(GlobalAlloc(GPTR, dmSize + dmExtra));
 
         if (usePrinterSettings)
         {
-            std::cout << "走 usePrinterSettings 2 " << std::endl;
+            // 当 usePrinterSettings 为 true 时，我们通过 DocumentProperties 获取驱动程序的当前设置。
+            // 这在内部会从注册表或驱动存储中读取持久化的打印机配置。
+            std::cout << "Loading persisted printer settings from driver..." << std::endl;
 
             HANDLE hPrinter = nullptr;
             auto printerName = fromUtf8(printer);
             if (OpenPrinter(const_cast<LPTSTR>(printerName.c_str()), &hPrinter, nullptr))
             {
-                // 获取默认的 DEVMODE
-                DocumentProperties(nullptr, hPrinter, const_cast<LPTSTR>(printerName.c_str()), dm, nullptr, DM_OUT_BUFFER);
+                // 获取包含驱动私有数据的 DEVMODE 完整大小
+                LONG dmSizeNeeded = DocumentProperties(nullptr, hPrinter, const_cast<LPTSTR>(printerName.c_str()), nullptr, nullptr, 0);
+                if (dmSizeNeeded > 0)
+                {
+                    GlobalFree(dm);
+                    dm = static_cast<DEVMODE *>(GlobalAlloc(GPTR, dmSizeNeeded));
 
-                // 修改宽高和份数
-                dm->dmFields |= DM_PAPERWIDTH | DM_PAPERLENGTH | DM_PAPERSIZE | DM_COPIES;
-                dm->dmPaperSize = 0; // 自定义尺寸
-                dm->dmPaperWidth = static_cast<short>(round(width * 254 / pdfDpi));
-                dm->dmPaperLength = static_cast<short>(round(height * 254 / pdfDpi));
-                dm->dmCopies = static_cast<short>(copies);
+                    if (dm != nullptr)
+                    {
+                        // DM_OUT_BUFFER 将当前配置（来自注册表）填充到 dm 结构中
+                        LONG result = DocumentProperties(nullptr, hPrinter, const_cast<LPTSTR>(printerName.c_str()), dm, nullptr, DM_OUT_BUFFER);
 
-                std::cout << "已在默认设置基础上修改: " << std::endl;
-                std::cout << "dmPaperWidth: " << dm->dmPaperWidth << std::endl;
-                std::cout << "dmPaperLength: " << dm->dmPaperLength << std::endl;
-                std::cout << "dmCopies: " << dm->dmCopies << std::endl;
+                        if (result == IDOK)
+                        {
+                            // 在保留驱动私有设置的前提下，覆盖纸张和份数
+                            dm->dmFields |= DM_PAPERWIDTH | DM_PAPERLENGTH | DM_PAPERSIZE | DM_COPIES;
+                            dm->dmPaperSize = 0; // 自定义纸张
+                            dm->dmPaperWidth = static_cast<short>(round(width * 254 / pdfDpi));
+                            dm->dmPaperLength = static_cast<short>(round(height * 254 / pdfDpi));
+                            dm->dmCopies = static_cast<short>(copies);
+
+                            std::cout << "Modified settings based on persisted driver defaults." << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "Failed to load driver settings, falling back to basic defaults." << std::endl;
+                            dm->dmSize = (WORD)sizeof(DEVMODE);
+                            dm->dmFields = DM_ORIENTATION | DM_PAPERSIZE | DM_PAPERLENGTH | DM_PAPERWIDTH | DM_COPIES;
+                            dm->dmPaperSize = 0;
+                            dm->dmOrientation = DMORIENT_PORTRAIT;
+                            dm->dmPaperWidth = static_cast<short>(round(width * 254 / pdfDpi));
+                            dm->dmPaperLength = static_cast<short>(round(height * 254 / pdfDpi));
+                            dm->dmCopies = static_cast<short>(copies);
+                        }
+                    }
+                }
 
                 ClosePrinter(hPrinter);
             }
         }
         else
         {
-            ZeroMemory(dm, sizeof(DEVMODE));
+            // 不加载持久化设置，直接构造基础 DEVMODE
             dm->dmSize = (WORD)dmSize;
             dm->dmDriverExtra = (WORD)dmExtra;
             dm->dmFields =
