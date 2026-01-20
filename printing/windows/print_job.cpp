@@ -104,49 +104,73 @@ namespace nfet
 
         if (usePrinterSettings)
         {
-            // 当 usePrinterSettings 为 true 时，我们通过 DocumentProperties 获取驱动程序的当前设置。
-            // 这在内部会从注册表或驱动存储中读取持久化的打印机配置。
-            std::cout << "Loading persisted printer settings from driver..." << std::endl;
+            // 当 usePrinterSettings 为 true 时，我们尝试获取用户当前的打印首选项。
+            std::cout << "Loading user-defined printer settings (including advanced options)..." << std::endl;
 
             HANDLE hPrinter = nullptr;
             auto printerName = fromUtf8(printer);
+            bool settingsLoaded = false;
             if (OpenPrinter(const_cast<LPTSTR>(printerName.c_str()), &hPrinter, nullptr))
             {
-                // 获取包含驱动私有数据的 DEVMODE 完整大小
-                LONG dmSizeNeeded = DocumentProperties(nullptr, hPrinter, const_cast<LPTSTR>(printerName.c_str()), nullptr, nullptr, 0);
-                if (dmSizeNeeded > 0)
+                // 优先使用 GetPrinter 获取 PRINTER_INFO_2。
+                // 这包含了 Spooler 缓存的用户默认 DEVMODE，通常包含镜像、旋转等高级私有设置。
+                DWORD dwNeeded = 0;
+                GetPrinter(hPrinter, 2, nullptr, 0, &dwNeeded);
+                if (dwNeeded > 0)
                 {
-                    GlobalFree(dm);
-                    dm = static_cast<DEVMODE *>(GlobalAlloc(GPTR, dmSizeNeeded));
-
-                    if (dm != nullptr)
+                    LPBYTE buffer = (LPBYTE)malloc(dwNeeded);
+                    if (buffer)
                     {
-                        // DM_OUT_BUFFER 将当前配置（来自注册表）填充到 dm 结构中
-                        LONG result = DocumentProperties(nullptr, hPrinter, const_cast<LPTSTR>(printerName.c_str()), dm, nullptr, DM_OUT_BUFFER);
-
-                        if (result == IDOK)
+                        if (GetPrinter(hPrinter, 2, buffer, dwNeeded, &dwNeeded))
                         {
-                            // 在保留驱动私有设置的前提下，覆盖纸张和份数
-                            dm->dmFields |= DM_PAPERWIDTH | DM_PAPERLENGTH | DM_PAPERSIZE | DM_COPIES;
-                            dm->dmPaperSize = 0; // 自定义纸张
-                            dm->dmPaperWidth = static_cast<short>(round(width * 254 / pdfDpi));
-                            dm->dmPaperLength = static_cast<short>(round(height * 254 / pdfDpi));
-                            dm->dmCopies = static_cast<short>(copies);
-
-                            std::cout << "Modified settings based on persisted driver defaults." << std::endl;
+                            PRINTER_INFO_2 *ppi = reinterpret_cast<PRINTER_INFO_2 *>(buffer);
+                            if (ppi->pDevMode != nullptr)
+                            {
+                                DWORD totalSize = ppi->pDevMode->dmSize + ppi->pDevMode->dmDriverExtra;
+                                GlobalFree(dm);
+                                dm = static_cast<DEVMODE *>(GlobalAlloc(GPTR, totalSize));
+                                if (dm)
+                                {
+                                    memcpy(dm, ppi->pDevMode, totalSize);
+                                    settingsLoaded = true;
+                                }
+                            }
                         }
-                        else
+                        free(buffer);
+                    }
+                }
+
+                // 如果 GetPrinter 失败，回退到 DocumentProperties 获取默认值
+                if (!settingsLoaded)
+                {
+                    LONG dmSizeNeeded = DocumentProperties(nullptr, hPrinter, const_cast<LPTSTR>(printerName.c_str()), nullptr, nullptr, 0);
+                    if (dmSizeNeeded > 0)
+                    {
+                        GlobalFree(dm);
+                        dm = static_cast<DEVMODE *>(GlobalAlloc(GPTR, dmSizeNeeded));
+                        if (dm && DocumentProperties(nullptr, hPrinter, const_cast<LPTSTR>(printerName.c_str()), dm, nullptr, DM_OUT_BUFFER) == IDOK)
                         {
-                            std::cout << "Failed to load driver settings, falling back to basic defaults." << std::endl;
-                            dm->dmSize = (WORD)sizeof(DEVMODE);
-                            dm->dmFields = DM_ORIENTATION | DM_PAPERSIZE | DM_PAPERLENGTH | DM_PAPERWIDTH | DM_COPIES;
-                            dm->dmPaperSize = 0;
-                            dm->dmOrientation = DMORIENT_PORTRAIT;
-                            dm->dmPaperWidth = static_cast<short>(round(width * 254 / pdfDpi));
-                            dm->dmPaperLength = static_cast<short>(round(height * 254 / pdfDpi));
-                            dm->dmCopies = static_cast<short>(copies);
+                            settingsLoaded = true;
                         }
                     }
+                }
+
+                if (settingsLoaded && dm)
+                {
+                    // 在保留驱动所有高级设置（如镜像）的前提下，仅在内存中修改纸张尺寸和份数。
+                    // 注意：这里没有调用带有 DM_UPDATE 的 DocumentProperties，修改仅对本次打印任务有效。
+                    // 不会保存到系统的打印机首选项（注册表）中。
+                    dm->dmFields |= DM_PAPERWIDTH | DM_PAPERLENGTH | DM_PAPERSIZE | DM_COPIES;
+                    dm->dmPaperSize = 0; // 自定义纸张
+                    dm->dmPaperWidth = static_cast<short>(round(width * 254 / pdfDpi));
+                    dm->dmPaperLength = static_cast<short>(round(height * 254 / pdfDpi));
+                    dm->dmCopies = static_cast<short>(copies);
+
+                    std::cout << "Settings loaded and modified in memory (non-persistent)." << std::endl;
+                }
+                else
+                {
+                    std::cout << "Failed to load any printer settings, using generic defaults." << std::endl;
                 }
 
                 ClosePrinter(hPrinter);
@@ -165,11 +189,7 @@ namespace nfet
             dm->dmPaperWidth = static_cast<short>(round(width * 254 / pdfDpi));
             dm->dmPaperLength = static_cast<short>(round(height * 254 / pdfDpi));
             dm->dmCopies = static_cast<short>(copies);
-            std::cout << "dm 参数设置: " << std::endl;
-            std::cout << "dmPaperWidth: " << dm->dmPaperWidth << std::endl;
-            std::cout << "dmPaperLength: " << dm->dmPaperLength << std::endl;
-            std::cout << "dmCopies: " << dm->dmCopies << std::endl;
-            std::cout << "dmOrientation 1log: " << dm->dmOrientation << std::endl;
+            std::cout << "Using basic default DEVMODE settings." << std::endl;
         }
 
         if (printer.empty())
