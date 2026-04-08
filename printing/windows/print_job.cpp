@@ -104,6 +104,7 @@ namespace nfet
 
         if (usePrinterSettings)
         {
+            std::cout << "走 usePrinterSettings  " << std::endl;
             // 当 usePrinterSettings 为 true 时，我们尝试获取用户当前的打印首选项。
             std::cout << "Loading user-defined printer settings (including advanced options)..." << std::endl;
 
@@ -157,14 +158,21 @@ namespace nfet
 
                 if (settingsLoaded && dm)
                 {
+                    std::cout << "走 settingsLoaded && dm  " << std::endl;
                     // 在保留驱动所有高级设置（如镜像）的前提下，仅在内存中修改纸张尺寸和份数。
                     // 注意：这里没有调用带有 DM_UPDATE 的 DocumentProperties，修改仅对本次打印任务有效。
                     // 不会保存到系统的打印机首选项（注册表）中。
                     dm->dmFields |= DM_PAPERWIDTH | DM_PAPERLENGTH | DM_PAPERSIZE | DM_COPIES;
                     dm->dmPaperSize = 0; // 自定义纸张
+
                     dm->dmPaperWidth = static_cast<short>(round(width * 254 / pdfDpi));
                     dm->dmPaperLength = static_cast<short>(round(height * 254 / pdfDpi));
                     dm->dmCopies = static_cast<short>(copies);
+
+                    std::cout << "已在默认设置基础上修改: " << std::endl;
+                    std::cout << "dmPaperWidth: " << dm->dmPaperWidth << std::endl;
+                    std::cout << "dmPaperLength: " << dm->dmPaperLength << std::endl;
+                    std::cout << "dmCopies: " << dm->dmCopies << std::endl;
 
                     std::cout << "Settings loaded and modified in memory (non-persistent)." << std::endl;
                 }
@@ -178,6 +186,7 @@ namespace nfet
         }
         else
         {
+            std::cout << "不走 usePrinterSettings  " << std::endl;
             // 不加载持久化设置，直接构造基础 DEVMODE
             dm->dmSize = (WORD)dmSize;
             dm->dmDriverExtra = (WORD)dmExtra;
